@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Journey: dropper em 9 camadas — writeup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #040505;
+            --fg: #ffffff;
+            --g: #ffffff;
+            --dim: #ffffff;
+            --red: #ffffff;
+            --amber: #ffffff;
+            --cyan: #ffffff;
+            --blue: #ffffff;
+            --mag: #ffffff
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            background: var(--bg)
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--fg);
+            background: radial-gradient(ellipse 80% 55% at 50% 0%, #0d0d0d, var(--bg) 70%);
+            font: 15px/1.65 "JetBrains Mono", "Fira Code", "Cascadia Mono", Menlo, Consolas, monospace
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 40;
+            pointer-events: none;
+            background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .18) 0 1px, transparent 1px 3px),
+                radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .6) 100%)
+        }
+
+        ::selection {
+            background: var(--g);
+            color: #000
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 28px 18px 90px;
+            text-shadow: 0 0 4px rgba(61, 255, 122, .15)
+        }
+
+        a {
+            color: var(--cyan)
+        }
+
+        a:hover {
+            background: var(--cyan);
+            color: #000
+        }
+
+        nav {
+            margin-bottom: 24px;
+            font-size: 14px
+        }
+
+        .kicker {
+            margin: 0 0 6px;
+            color: var(--dim);
+            font-size: 13px
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            color: #fff;
+            font-size: clamp(20px, 4vw, 30px);
+            line-height: 1.25
+        }
+
+        .tags {
+            margin: 0 0 26px;
+            color: var(--cyan);
+            font-size: 13px
+        }
+
+        h2 {
+            margin: 38px 0 10px;
+            padding-bottom: 6px;
+            color: var(--g);
+            font-size: 17px;
+            border-bottom: 1px dashed #14502b
+        }
+
+        h3 {
+            margin: 26px 0 8px;
+            color: var(--amber);
+            font-size: 15px
+        }
+
+        p {
+            margin: 0 0 12px
+        }
+
+        ul {
+            margin: 0 0 14px;
+            padding-left: 22px
+        }
+
+        li {
+            margin: 4px 0
+        }
+
+        code {
+            color: var(--amber)
+        }
+
+        pre {
+            margin: 0 0 16px;
+            padding: 14px 16px;
+            overflow-x: auto;
+            background: #07120b;
+            border: 1px solid #14502b;
+            font: 13px/1.55 inherit;
+            color: var(--fg);
+            text-shadow: none
+        }
+
+        pre code {
+            color: var(--fg)
+        }
+
+        .flag {
+            color: var(--g);
+            font-weight: 700;
+            border-color: var(--g);
+            text-shadow: 0 0 10px rgba(61, 255, 122, .5)
+        }
+
+        table {
+            width: 100%;
+            margin: 8px 0 18px;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        th,
+        td {
+            padding: 6px 8px;
+            border: 1px solid #14502b;
+            text-align: left;
+            vertical-align: top
+        }
+
+        th {
+            background: #07120b;
+            color: var(--g)
+        }
+
+        .dim {
+            color: var(--dim)
+        }
+
+        .note {
+            margin: 14px 0;
+            padding: 8px 12px;
+            background: #100d06;
+            border-left: 2px solid var(--amber);
+            color: var(--dim)
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <nav><a href="../index.html#ctf's/ctf+pink">← ../index.html#ctf's/ctf+pink</a></nav>
+
+        <header>
+            <p class="kicker">[ctf's] · ctf+pink · insano · 2026-11-07 · reversing / malware</p>
+            <h1>Journey: um dropper em 9 camadas</h1>
+            <p class="tags">#go #c #python #rust #haskell #java #brainfuck #ruby #emojicode #aes-gcm</p>
+            <p class="dim">Evento: <a href="https://ctf.pink.bayern/challenges" target="_blank"
+                    rel="noopener">ctf.pink.bayern/challenges</a></p>
+        </header>
+
+        <section>
+            <h2>TL;DR</h2>
+            <p>O arquivo <code>journey.go</code> (74 MB) é um dropper multi-estágio. Cada camada é escrita em uma
+                linguagem diferente e decodifica a próxima: Go → C → Python → Rust → Haskell → Java → Brainfuck → Ruby
+                → Emojicode. A última camada imprime a flag caractere a caractere.</p>
+            <pre class="flag">PINK{Th3_J0urn3y_m4y_n3v3r_3nd!!}</pre>
+        </section>
+
+        <section>
+            <h2>1. Artefato inicial</h2>
+            <p>O arquivo tem 74.933.929 bytes, mas é um fonte Go legítimo. O conteúdo principal é uma constante hex
+                gigante (<code>gogogo</code>, ~75 MB de hex = 37,4 MB de bytes) mais um decodificador:</p>
+            <ul>
+                <li><code>s0()</code> decodifica hex e aplica XOR <code>0xAA</code> — usado para nomes e mensagens.</li>
+                <li><code>deByte()</code> decodifica cada byte do blob com uma máscara dependente do índice.</li>
+                <li>Os 4 primeiros bytes decodificados são o tamanho (<em>big-endian</em>) do payload seguinte.</li>
+            </ul>
+            <pre><code>func deByte(i int, y byte, binbash byte) byte {
+    b := byte((uint32(i)*uint32(i) + 31*uint32(i) + uint32(binbash)) &amp; 0xFF)
+    t := byte((uint16(y) - uint16(b)) &amp; 0xFF)
+    u := byte((uint16(t) * 13) &amp; 0xFF)
+    return (u &gt;&gt; 1) | (u &lt;&lt; 7)   // rotate right 1
+}</code></pre>
+            <p>Reimplementando em Python:</p>
+            <pre><code>pt = bytes(debyte(i, c) for i, c in enumerate(ct))
+n  = int.from_bytes(pt[:4], "big")
+payload = pt[4:4 + n]</code></pre>
+            <p>Saída: <code>standard.journey</code> (fonte C) e a mensagem
+                <span class="dim">"This Google language is a bit unusual, maybe I should go back to the standard"</span>.
+            </p>
+        </section>
+
+        <section>
+            <h2>2. As camadas</h2>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Artefato</th><th>Linguagem</th><th>Transformação</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td>journey.go</td><td>Go</td><td>hex + <code>deByte</code> (xorshift/salt/ror1)</td></tr>
+                    <tr><td>2</td><td>standard.journey</td><td>C</td><td>72 linhas com <code>line_de</code> (xorshift32 + ror3)</td></tr>
+                    <tr><td>3</td><td>snake.journey</td><td>Python</td><td>zlib 10× + XOR com SHA-256</td></tr>
+                    <tr><td>4</td><td>rusted.journey</td><td>Rust</td><td>XOR com <code>1337coffee</code> + mix + ror1</td></tr>
+                    <tr><td>5</td><td>haskell.journey</td><td>Haskell</td><td><code>byte[i] -= (i+1)</code></td></tr>
+                    <tr><td>6</td><td>coffee.journey</td><td>Java</td><td>PBKDF2-HMAC-SHA256 + AES-256-GCM</td></tr>
+                    <tr><td>7</td><td>awake.journey</td><td>Brainfuck</td><td>apenas <code>+ - .</code> → base64</td></tr>
+                    <tr><td>8</td><td>ruby.journey</td><td>Ruby</td><td>header <code>JRNYv2</code> + keystream SHA-256 + gzip</td></tr>
+                    <tr><td>9</td><td>healthy_food.journey</td><td>Emojicode</td><td>XOR com <code>0x3F</code> por bloco</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>3. Camada C — <code>standard.journey</code></h2>
+            <p>O fonte C contém 72 arrays <code>L0..L71</code> com os bytes cifrados, os tamanhos reais em
+                <code>Q_LENS</code> e um salt por linha em <code>Q_SALT</code>. O decoder:</p>
+            <pre><code>st = 0xC0FFEE00 ^ (li * 0x9E3779B9) ^ n ^ (salt &lt;&lt; 24)
+st ^= (st &lt;&lt; 13); st ^= (st &gt;&gt; 7)
+
+for j in range(n):
+    t = ror3((data[j] - salt) &amp; 0xFF)
+    k = (xs32(st) ^ (li * 131) ^ j) &amp; 0xFF
+    out[j] = ((t ^ k) - ((j + li) &amp; 0xFF)) &amp; 0xFF</code></pre>
+            <p>O array <code>L6</code> tem ~6 MB — é o payload real; os outros são linhas pequenas de código. Saída:
+                <code>snake.journey</code> (Python) e a mensagem <span class="dim">"C is only one letter; less is
+                    faster, but I also want to fight snakes..."</span>.</p>
+            <div class="note">Decoys: <code>opq()</code> usa <code>(x &amp; 0xF) == 0x11</code>, que é impossível
+                (0x11 = 17 &gt; 15). O mesmo padrão aparece em todas as camadas.</div>
+        </section>
+
+        <section>
+            <h2>4. Camada Python — <code>snake.journey</code></h2>
+            <p>Blob zlib + XOR com keystream derivado de <code>SHA-256(salt + r + salt)</code>, repetido 10 vezes:</p>
+            <pre><code>for r in reversed(range(10)):
+    y = zlib.decompress(y)
+    y = xor(y, hashlib.sha256(salt + bytes([r]) + salt).digest())</code></pre>
+            <p>Saída: <code>rusted.journey</code> (Rust), com a mensagem <span class="dim">"Python is pretty slow, I
+                    am afraid my computer has rusted by now"</span>.</p>
+        </section>
+
+        <section>
+            <h2>5. Camada Rust — <code>rusted.journey</code></h2>
+            <p>O blob hex é concatenado e decodificado com a chave <code>1337coffee</code>:</p>
+            <pre><code>let key = b"1337coffee";
+decoded[i] = ror1(blob[i] ^ ((i * 131) &amp; 0xFF) ^ key[i % key.len()]);</code></pre>
+            <p>Saída: <code>haskell.journey</code>. Mensagem: <span class="dim">"Now that I am all rusted up, I
+                    should use a classic again"</span>.</p>
+        </section>
+
+        <section>
+            <h2>6. Camada Haskell — <code>haskell.journey</code></h2>
+            <p>Depois de concatenar os 32 blocos hex, cada byte recebe uma subtração posicional (índice 1-based):</p>
+            <pre><code>k3[i] = (k1[i] - (i + 1)) % 256</code></pre>
+            <p>Saída: <code>coffee.journey</code> (Java). Mensagem: <span class="dim">"Haskell was exhausting, now I
+                    need some coffee first!"</span>.</p>
+        </section>
+
+        <section>
+            <h2>7. Camada Java — <code>coffee.journey</code></h2>
+            <p>A camada mais “profissional”. O programa:</p>
+            <ul>
+                <li>Usa reflection para pegar todos os campos <code>cappuccino_NNN</code> (3 dígitos), ordena e concatena
+                    os valores base64.</li>
+                <li>Deriva a chave com <code>PBKDF2WithHmacSHA256</code>: senha <code>espresso-beans-42</code>, salt de
+                    16 bytes, <strong>9541 iterações</strong> e chave de <strong>256 bits</strong>.</li>
+                <li>Decifra com <code>AES/GCM/NoPadding</code>, IV de 16 bytes e AAD igual ao nome do arquivo
+                    (<code>awake.journey</code>).</li>
+            </ul>
+            <pre><code>PBEKeySpec("espresso-beans-42".toCharArray(), salt16, 9541, 256)
+Cipher.getInstance("AES/GCM/NoPadding")
+c.updateAAD("awake.journey".getBytes(UTF_8))</code></pre>
+            <p>Saída: <code>awake.journey</code> (Brainfuck). Mensagem: <span class="dim">"After so much coffee I feel
+                    wide awake; my brain is completely scrambled"</span>.</p>
+        </section>
+
+        <section>
+            <h2>8. Camada Brainfuck — <code>awake.journey</code></h2>
+            <p>O programa só usa <code>+</code>, <code>-</code> e <code>.</code> — sem loops nem ponteiros. É uma
+                sequência linear que imprime 28.740 bytes:</p>
+            <pre><code>cell = 0
+for ch in code:
+    if ch == '+': cell = (cell + 1) &amp; 0xFF
+    if ch == '-': cell = (cell - 1) &amp; 0xFF
+    if ch == '.': out.append(cell)</code></pre>
+            <p>A saída é uma mensagem (<span class="dim">"Now I would like to mine rubies. But how?"</span>) seguida de
+                um blob base64 que decodifica para <code>ruby.journey</code>.</p>
+        </section>
+
+        <section>
+            <h2>9. Camada Ruby — <code>ruby.journey</code></h2>
+            <p>O payload tem um header próprio: <code>JRNYv2\0\0</code> + número de rodadas (6) + tamanho da chave (24)
+                + salt (24 bytes) + flag de gzip + tamanho esperado. O decode é um XOR com keystream
+                <code>SHA-256(salt + rodada)</code>:</p>
+            <pre><code>for h in range(doha - 1, -1, -1):
+    manila = sha256(cairo + struct.pack("&gt;I", h)).digest()[:naples]
+    vienna = xor(vienna, manila)
+
+if lima_f &amp; 1:
+    vienna = gzip.decompress(vienna)</code></pre>
+            <p>Saída: <code>healthy_food.journey</code> (Emojicode). Mensagem: <span class="dim">"I found a ruby in the
+                    mine! But now I am really hungry for some grapes!"</span>.</p>
+        </section>
+
+        <section>
+            <h2>10. Camada final — Emojicode</h2>
+            <p>O programa declara 8 constantes (<code>mango=90</code>, <code>guava=17</code>, <code>papaya=204</code>,
+                <code>lychee=51</code>, <code>durian=113</code>, <code>kumquat=7</code>, <code>fig=58</code>,
+                <code>quince=199</code>) e 33 blocos. Em cada bloco, uma constante nova recebe XOR com as 8 frutas e o
+                resultado é mapeado para um caractere ASCII via um switch gigante.</p>
+            <p>Como <code>❌</code> é o operador XOR do Emojicode, todas as chaves se anulam:</p>
+            <pre><code>K = 90 ^ 17 ^ 204 ^ 51 ^ 113 ^ 7 ^ 58 ^ 199   # = 0x3F
+flag = ''.join(chr(c ^ K) for c in consts)</code></pre>
+            <p>Os 33 blocos produzem, em ordem:</p>
+            <pre class="flag">PINK{Th3_J0urn3y_m4y_n3v3r_3nd!!}</pre>
+        </section>
+
+        <section>
+            <h2>11. Técnica vs. malware real</h2>
+            <p>O desafio é didático, mas usa as mesmas primitivas de um dropper/loader de malware:</p>
+            <table>
+                <thead>
+                    <tr><th>Presente no CTF</th><th>Uso em malware real</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Loader multi-estágio</td><td>Stagers, packers e shellcode loaders</td></tr>
+                    <tr><td>XOR/rotates/AES + compressão</td><td>Ofuscação e criptografia de payload</td></tr>
+                    <tr><td>Blobs em constantes de string</td><td>Evasão de AV/EDR estático</td></tr>
+                    <tr><td>Execução via interpretadores</td><td>LOLBins para burlar whitelisting</td></tr>
+                    <tr><td>Branches e arquivos decoy</td><td>Anti-sandbox / anti-análise</td></tr>
+                </tbody>
+            </table>
+            <p>O que falta para ser malware “de verdade”: execução em memória (reflective loading/injection), C2,
+                persistência, anti-VM/anti-debug e uma cadeia de toolchains viável. A defesa é a mesma usada aqui:
+                <strong>emular os decoders</strong>, inspecionar entropia e strings, e monitorar interpretadores que
+                gravam executáveis.</p>
+        </section>
+
+        <section>
+            <h2>12. Conclusão</h2>
+            <p>Um exercício excelente de leitura de código e reimplementação de decoders. A regra de ouro foi nunca
+                executar o binário original: cada camada foi traduzida para Python (ou executada em ambiente isolado,
+                no caso do Java) até sobrar apenas texto.</p>
+            <p class="dim">Flag: PINK{Th3_J0urn3y_m4y_n3v3r_3nd!!}</p>
+        </section>
+    </main>
+</body>
+
+</html>

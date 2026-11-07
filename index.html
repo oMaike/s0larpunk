@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Writeups de seunome</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <!--
+  COMO USAR NO GITHUB PAGES
+  1. Salve este arquivo como index.html na raiz do repositório.
+  2. Edite EU (seu nome, github, e-mail) e o array WRITEUPS no fim do arquivo.
+  3. "link" aponta para o writeup (.html, .md, .pdf ou URL externa).
+     O nome do arquivo que aparece no terminal é o final do link.
+-->
+    <style>
+        :root {
+            --bg: #000;
+            --fg: #8c8c8c;
+            --g: #8c8c8c;
+            --dim: #8c8c8c;
+            --line: #262626;
+            --line2: #3d3d3d;
+            --hover: #0f0f0f;
+            --red: #8c8c8c;
+            --amber: #8c8c8c;
+            --cyan: #8c8c8c;
+            --blue: #8c8c8c;
+            --mag: #8c8c8c;
+            --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            --mono: "JetBrains Mono", "Fira Code", "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            background: #000;
+            color-scheme: dark;
+            accent-color: #8c8c8c;
+            scroll-behavior: smooth
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--fg);
+            background: #000;
+            font: 16px/1.7 var(--sans);
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: #8c8c8c;
+            color: #000
+        }
+
+        :focus-visible {
+            outline: 1px solid #8c8c8c;
+            outline-offset: 3px
+        }
+
+        button {
+            font: inherit;
+            color: inherit
+        }
+
+        .term {
+            max-width: 820px;
+            margin: 0 auto;
+            padding: 48px 20px 100px
+        }
+
+        .o {
+            margin: 0 0 .6em;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font: 14px/1.6 var(--mono)
+        }
+
+        .dim,
+        .g,
+        .k,
+        .u,
+        .p,
+        .kb {
+            color: var(--fg)
+        }
+
+        .u,
+        .p {
+            font-weight: 700
+        }
+
+        .o a,
+        .o a:visited {
+            color: var(--fg);
+            text-decoration: underline;
+            text-underline-offset: 3px
+        }
+
+        /* boot como bloco de código */
+        #boot {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 0 0 18px;
+            font: 12px/1.5 var(--mono)
+        }
+
+        .pane {
+            min-width: 0;
+            min-height: 4em;
+            padding: 9px 12px;
+            border: 1px solid var(--line);
+            border-radius: 5px
+        }
+
+        .pane.clr>* {
+            opacity: 0;
+            transition: opacity .18s
+        }
+
+        #boot .o {
+            font: inherit;
+            margin: 0
+        }
+
+        #boot .o:has(.bn) {
+            margin: 0
+        }
+
+        #boot:has(.bn) {
+            padding-bottom: 14px
+        }
+
+        /* títulos */
+        .bn {
+            margin: 18px 0 6px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--line);
+            font: 700 30px/1.3 var(--sans);
+            white-space: normal;
+            color: var(--fg)
+        }
+
+        .bn::before {
+            content: "# ";
+            font-weight: 400;
+            opacity: .55
+        }
+
+        .bn+.tag {
+            display: block;
+            margin: 8px 0 0;
+            padding-left: 14px;
+            border-left: 3px solid var(--line2);
+            font: 15px/1.6 var(--sans)
+        }
+
+        /* painel */
+        .panel {
+            margin: 28px 0;
+            background: #000
+        }
+
+        .panel[hidden] {
+            display: none
+        }
+
+        .bar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            padding: 10px 0 14px;
+            background: #000;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 14px
+        }
+
+        .tabs[hidden] {
+            display: none
+        }
+
+        .sub-tabs {
+            margin-top: 8px;
+            padding-left: 2ch
+        }
+
+        .tab {
+            font: 14px/1.6 var(--mono);
+            color: var(--fg);
+            background: none;
+            border: 0;
+            padding: 0 2px;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            text-decoration-color: var(--line2)
+        }
+
+        .tab::before {
+            content: "["
+        }
+
+        .tab::after {
+            content: "]"
+        }
+
+        .tab:hover {
+            text-decoration-color: var(--fg)
+        }
+
+        .tab small {
+            font: inherit;
+            opacity: .6;
+            margin-left: 4px
+        }
+
+        .tab[aria-pressed="true"] {
+            background: #8c8c8c;
+            color: #000;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 3px
+        }
+
+        .tab.ex {
+            text-decoration-style: dashed
+        }
+
+        .tab:not(.ex)+.tab.ex {
+            margin-left: auto
+        }
+
+        .find {
+            display: flex;
+            align-items: baseline;
+            gap: 1ch;
+            margin-top: 14px;
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            font: 14px/1.6 var(--mono);
+            transition: border-color .15s
+        }
+
+        .find:focus-within {
+            border-color: #8c8c8c
+        }
+
+        .find label {
+            white-space: nowrap
+        }
+
+        .find input {
+            flex: 1;
+            min-width: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: var(--fg);
+            font: inherit;
+            caret-color: #8c8c8c;
+            caret-shape: block;
+            outline: none
+        }
+
+        .find input::placeholder {
+            color: #5c5c5c
+        }
+
+        @keyframes blink {
+
+            0%,
+            49% {
+                opacity: 1
+            }
+
+            50%,
+            100% {
+                opacity: 0
+            }
+        }
+
+        @keyframes caret {
+
+            0%,
+            49% {
+                caret-color: #8c8c8c
+            }
+
+            50%,
+            100% {
+                caret-color: transparent
+            }
+        }
+
+        .find .cur {
+            flex: none;
+            width: .6em;
+            height: 1.15em;
+            align-self: center;
+            background: #8c8c8c;
+            animation: blink 1s step-end infinite
+        }
+
+        .find .cur:has(+ input:focus),
+        .find:focus-within .cur,
+        .find:has(input:not(:placeholder-shown)) .cur {
+            display: none
+        }
+
+        .find input:focus {
+            animation: caret 1s step-end infinite
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .find .cur,
+            .find input:focus {
+                animation: none
+            }
+        }
+
+        .tcur {
+            display: inline-block;
+            width: .6em;
+            height: 1.1em;
+            margin-left: 1px;
+            vertical-align: text-bottom;
+            background: #8c8c8c;
+            animation: blink 1s step-end infinite
+        }
+
+        .find kbd {
+            padding: 0 7px;
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            font: 12px var(--mono)
+        }
+
+        /* citação (blockquote) */
+        .meta {
+            display: none;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px 18px;
+            margin: 18px 0 8px;
+            padding-left: 14px;
+            border-left: 3px solid var(--line2);
+            font-size: 14px
+        }
+
+        .srt {
+            font: 14px var(--sans);
+            background: none;
+            border: 0;
+            padding: 0 4px;
+            cursor: pointer
+        }
+
+        .srt:hover {
+            text-decoration: underline;
+            text-underline-offset: 3px
+        }
+
+        .srt[aria-pressed="true"] {
+            font-weight: 700;
+            text-decoration: underline;
+            text-underline-offset: 4px
+        }
+
+        /* lista */
+        .row {
+            padding: 14px 0 12px;
+            border-top: 1px solid var(--line)
+        }
+
+        .row:first-child {
+            border-top: 0
+        }
+
+        .ent,
+        .ent:visited {
+            display: flex;
+            gap: 1.2ch;
+            align-items: baseline;
+            color: var(--fg);
+            text-decoration: none
+        }
+
+        .mk {
+            font: 700 16px var(--mono);
+            color: var(--fg);
+            opacity: .6
+        }
+
+        .ti {
+            font-weight: 700;
+            font-size: 18px;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            text-decoration-color: var(--line2)
+        }
+
+        .ent:hover .ti {
+            text-decoration-color: var(--fg)
+        }
+
+        .ent:focus-visible {
+            outline: 1px solid #8c8c8c;
+            outline-offset: 4px;
+            border-radius: 3px
+        }
+
+        .sub {
+            display: none;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+            margin: 8px 0 0 3.2ch;
+            font: 13px/1.6 var(--mono)
+        }
+
+        .ct,
+        .df,
+        .dt,
+        .sub>span,
+        .tg {
+            padding: 0 7px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: #000;
+            color: var(--fg);
+            line-height: 1.6
+        }
+
+        .df.mid,
+        .df.bad {
+            border-color: var(--line2)
+        }
+
+        .df.evil {
+            background: #8c8c8c;
+            color: #000;
+            border-color: #8c8c8c;
+            font-weight: 700
+        }
+
+        .tg {
+            font: inherit;
+            cursor: pointer
+        }
+
+        .tg:hover {
+            border-color: #8c8c8c
+        }
+
+        .sub a.go {
+            order: -2
+        }
+
+        .sub .ct,
+        .sub .df,
+        .sub .dt {
+            order: -1
+        }
+
+        .row.open .sub {
+            display: flex
+        }
+
+        .mk::before {
+            content: "-"
+        }
+
+        .row.open .mk::before {
+            content: "v"
+        }
+
+        .sub a.go,
+        .sub a.go:visited {
+            padding: 0 7px;
+            border: 1px solid #8c8c8c;
+            border-radius: 4px;
+            color: var(--fg);
+            text-decoration: none;
+            font-weight: 700;
+            line-height: 1.6
+        }
+
+        .sub a.go:hover {
+            background: #8c8c8c;
+            color: #000
+        }
+
+        .contato {
+            margin: 40px auto 0;
+            text-align: center
+        }
+
+        .contato h2 {
+            margin: 0 0 6px;
+            font: 400 11px/1.6 var(--mono);
+            opacity: .6
+        }
+
+        .contato svg {
+            width: 1.15em;
+            height: 1.15em;
+            margin-right: .6ch;
+            vertical-align: text-bottom
+        }
+
+        .contato p {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            margin: 0;
+            font: 11px/1.6 var(--mono)
+        }
+
+        .contato a,
+        .contato a:visited {
+            color: var(--fg);
+            opacity: .75;
+            text-decoration: none
+        }
+
+        .contato a:hover {
+            opacity: 1;
+            text-decoration: underline;
+            text-underline-offset: 3px
+        }
+
+        mark {
+            background: #8c8c8c;
+            color: #000;
+            padding: 0 2px;
+            border-radius: 2px
+        }
+
+        .vazio {
+            padding: 24px 0
+        }
+
+        .foot {
+            margin: 8px 0 0;
+            padding-left: 14px;
+            border-left: 3px solid var(--line2);
+            font-size: 14px;
+            color: var(--fg);
+            opacity: .75
+        }
+
+        .chip {
+            font: 14px var(--mono);
+            background: none;
+            border: 0;
+            padding: 0 2px;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px
+        }
+
+        .chip::before {
+            content: "["
+        }
+
+        .chip::after {
+            content: "]"
+        }
+
+        /* prompt */
+        .line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0 1ch;
+            align-items: baseline;
+            scroll-margin-bottom: 70px;
+            font: 14px/1.6 var(--mono)
+        }
+
+        .line[hidden] {
+            display: none
+        }
+
+        .line input {
+            flex: 1 1 14ch;
+            min-width: 14ch;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: var(--fg);
+            font: inherit;
+            caret-color: #8c8c8c;
+            caret-shape: block;
+            outline: none
+        }
+
+        /* tmux */
+        .tmux {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 30;
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 5px 16px calc(5px + env(safe-area-inset-bottom));
+            background: #000;
+            border-top: 1px solid var(--line);
+            color: var(--fg);
+            font: 12px var(--mono);
+            white-space: nowrap
+        }
+
+        .tmux span {
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        @media(max-width:700px) {
+            #boot {
+                grid-template-columns: 1fr
+            }
+
+            .term {
+                padding: 28px 14px 90px
+            }
+
+            .bn {
+                font-size: 24px
+            }
+
+            .tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 4px
+            }
+
+            .tab {
+                flex: none
+            }
+
+            .find kbd {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="term" id="term">
+        <div id="boot">
+            <div class="pane" id="bl"></div>
+            <div class="pane" id="br"></div>
+        </div>
+        <section class="panel" id="panel" hidden aria-label="Lista de writeups">
+            <div class="bar">
+                <div class="tabs" id="tabs"></div>
+                <div class="tabs sub-tabs" id="subtabs" hidden></div>
+            </div>
+            <div class="meta"><span id="cnt" aria-live="polite"></span><span id="sort"></span></div>
+            <div id="res"></div>
+        </section>
+        <noscript>
+            <p class="o">Este site precisa de JavaScript para abrir o terminal.</p>
+        </noscript>
+        <section class="contato" id="contato" aria-labelledby="contato-t">
+            <h2 id="contato-t">contato</h2>
+            <p id="contato-l"></p>
+        </section>
+    </main>
+
+    <div class="tmux" aria-hidden="true"><span>[0] writeups&nbsp; 0:bash* 1:nc-</span><span id="tclock"></span></div>
+
+    <script>
+        /* ---------- EDITE AQUI: seus dados ---------- */
+        const EU = { nome: "s0larpunk", github: "https://github.com/oMaike", linkedin: "https://www.linkedin.com/in/maike-gabriel-rosa/", email: "***REMOVED***" };
+
+        /* cat: bugbounty | ctf's | maquina | reversing | web
+           sub: subcategoria opcional (ex.: evento/CTF de origem)
+           dif: facil | medio | dificil | insano
+           data: AAAA-MM-DD    link: caminho do writeup (.html, .md, .pdf) ou URL    */
+        const WRITEUPS = [
+            { titulo: "Journey: dropper multi-camadas em 9 linguagens", plataforma: "ctf.pink.bayern", sub: "ctf+pink", url: "https://ctf.pink.bayern/challenges", cat: "ctf's", dif: "insano", data: "2026-11-07", tags: ["reversing", "malware", "aes-gcm", "emojicode", "brainfuck"], link: "writeups/journey-ctf.html" }
+        ];
+
+        /* ---------- núcleo ---------- */
+        const $ = id => document.getElementById(id);
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        const DIF = {
+            facil: { t: "fácil", c: "ok", n: 1 }, medio: { t: "média", c: "mid", n: 2 },
+            dificil: { t: "difícil", c: "bad", n: 3 }, insano: { t: "insana", c: "evil", n: 4 }
+        };
+        const SORTS = { data: "data", titulo: "título", dif: "dificuldade", cat: "categoria" };
+        const CATS = ["bugbounty", "ctf's", "maquina", "reversing", "web"];
+        const CATSET = new Set(CATS);
+        const catOf = p => (p || "").split("/")[0];
+        const subOf = p => (p || "").split("/")[1] || "";
+        const subsOf = c => [...new Set(WRITEUPS.filter(w => w.cat === c && w.sub).map(w => w.sub))];
+        const dirOk = p => { const a = p.split("/"); return a.length <= 2 && CATSET.has(a[0]) && (a[1] === undefined || subsOf(a[0]).includes(a[1])); };
+        const hashPath = () => { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return location.hash.slice(1); } };
+        const nome = w => w.link.split("?")[0].split("/").filter(Boolean).pop() || "writeup";
+        const achar = n => WRITEUPS.find(w => nome(w) === n || nome(w).replace(/\.[^.]+$/, "") === n);
+
+        let aberto = false, cwd = "", q = "", sk = "data", sd = -1, hist = [], hi = 0, alvo = false;
+        const palavras = () => q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        const casa = w => { const h = [w.titulo, w.plataforma, w.sub, w.cat, nome(w), ...(w.tags || [])].join(" ").toLowerCase(); return palavras().every(p => h.includes(p)); };
+        const path = () => "/var/www/writeups" + (cwd ? "/" + cwd : "");
+        const pr = p => `<span class="u">www-data@writeups</span>:<span class="p">${esc(p)}</span>$`;
+
+        const lista = () => {
+            const v = w => sk === "dif" ? (DIF[w.dif] || DIF.facil).n : w[sk];
+            const c = catOf(cwd), s = subOf(cwd);
+            return WRITEUPS.filter(w => (!c || w.cat === c) && (!s || w.sub === s) && casa(w)).sort((a, b) => {
+                const x = v(a), y = v(b);
+                return sd * (typeof x === "number" ? x - y : String(x).localeCompare(String(y), "pt-BR")) || b.data.localeCompare(a.data);
+            });
+        };
+        const hl = s => {
+            const p = palavras(); if (!p.length) return esc(s);
+            const re = new RegExp("(" + p.map(x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "gi");
+            return String(s).split(re).map((t, i) => i % 2 ? `<mark>${esc(t)}</mark>` : esc(t)).join("");
+        };
+        const row = w => `<div class="row"><a class="ent" href="${esc(w.link)}"><span class="mk" aria-hidden="true"></span><span class="ti">${hl(w.titulo)}</span></a></div>`;
+
+        function painel() {
+            const n = {}; WRITEUPS.forEach(w => n[w.cat] = (n[w.cat] || 0) + 1);
+            const c = catOf(cwd), s = subOf(cwd);
+            const tab = (x, t, k) => `<button class="tab" data-cat="${esc(x)}" aria-pressed="${x ? c === x : (!c && aberto)}">${esc(t)} <small>${k}</small></button>`;
+            $("tabs").innerHTML = tab("", "todos", WRITEUPS.length) + CATS.map(x => tab(x, x, n[x] || 0)).join("");
+            const subs = c ? subsOf(c) : [];
+            $("subtabs").innerHTML = subs.map(x => {
+                const cnt = WRITEUPS.filter(w => w.cat === c && w.sub === x).length;
+                return `<button class="tab" data-cat="${esc(c)}" data-sub="${esc(x)}" aria-pressed="${s === x}">↳ ${esc(x)} <small>${cnt}</small></button>`;
+            }).join("");
+            $("subtabs").hidden = !subs.length;
+            const l = lista(), filtrado = cwd || q.trim();
+            $("res").innerHTML = !(aberto || cwd) ? "" : l.length ? l.map(row).join("") :
+                `<div class="vazio"><span class="dim">nenhum writeup encontrado.</span> <button class="chip" data-limpar>limpar filtros</button></div>`;
+            $("cnt").innerHTML = `# ${l.length} de ${WRITEUPS.length} writeups` + (cwd ? ` em <span class="g">${esc(path())}</span>` : "") +
+                (q.trim() ? ` com “${esc(q.trim())}”` : "") + (filtrado ? ` <button class="chip" data-limpar>limpar</button>` : "");
+            $("sort").innerHTML = '<span class="dim">ordenar:</span> ' + Object.entries(SORTS).map(([k, t]) =>
+                `<button class="srt" data-sort="${k}" aria-pressed="${sk === k}">${t}${sk === k ? (sd > 0 ? "▲" : "▼") : ""}</button>`).join(" ");
+            try { if (location.hash.slice(1) !== cwd) history.replaceState(null, "", cwd ? "#" + cwd : location.pathname + location.search); } catch (e) { }
+        }
+
+        /* ---------- saída e execução ---------- */
+        const out = (html, cls = "", alvoEl = $("br")) => { const d = document.createElement("div"); d.className = "o " + cls; d.innerHTML = html; alvoEl.appendChild(d); return d; };
+        const follow = () => {
+            if (alvo) { alvo = false; $("panel").scrollIntoView({ block: "start" }); return; }
+            const el = $("boot").lastElementChild;
+            if (el) el.scrollIntoView({ block: "end" });
+        };
+
+
+        /* ---------- eventos ---------- */
+        $("panel").addEventListener("click", e => {
+            const b = e.target.closest("[data-cat],[data-tag],[data-sort],[data-limpar]"); if (!b) return;
+            const d = b.dataset;
+            if ("sub" in d) { cwd = d.cat + "/" + d.sub; q = ""; aberto = true; }
+            else if ("cat" in d) { cwd = d.cat; q = ""; aberto = true; }
+            else if ("tag" in d) { q = d.tag; }
+            else if ("sort" in d) { if (d.sort === sk) sd *= -1; else { sk = d.sort; sd = sk === "data" ? -1 : 1; } }
+            else { cwd = ""; q = ""; }
+            painel();
+        });
+        $("res").addEventListener("keydown", e => {
+            if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+            const r = [...$("res").querySelectorAll(".ent")], i = r.indexOf(document.activeElement); if (i < 0) return;
+            e.preventDefault();
+            const nx = r[i + (e.key === "ArrowDown" ? 1 : -1)];
+            if (nx) nx.focus();
+        });
+        addEventListener("hashchange", () => {
+            const h = hashPath(); cwd = dirOk(h) ? h : "";
+            if (!$("panel").hidden) painel();
+        });
+
+        /* ---------- relógio do tmux ---------- */
+        const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+        function relogio() {
+            const d = new Date(), p = n => String(n).padStart(2, "0");
+            $("tclock").textContent = `"${EU.nome}" ${p(d.getHours())}:${p(d.getMinutes())} ${p(d.getDate())}-${MES[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;
+        }
+        relogio(); setInterval(relogio, 20000);
+        const ICO_GH = `<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>`;
+        const ICO_LI = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67h-3.55V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>`;
+        const CONTATOS = [
+            { href: EU.github, ico: ICO_GH, txt: "GitHub", ext: true },
+            { href: EU.linkedin, ico: ICO_LI, txt: "LinkedIn", ext: true }
+        ];
+        const linkContato = c => `<a href="${esc(c.href)}"${c.ext ? ' target="_blank" rel="noopener"' : ""}>${c.ico}${esc(c.txt)}</a>`;
+        async function digitarContato() {
+            const el = $("contato-l");
+            if (rapido) { el.innerHTML = CONTATOS.map(linkContato).join(""); return; }
+            for (const c of CONTATOS) {
+                const linha = document.createElement("span");
+                const t = document.createTextNode(""), cur = document.createElement("span");
+                cur.className = "tcur";
+                linha.append(t, cur);
+                el.appendChild(linha);
+                for (const ch of c.txt) {
+                    t.data += ch;
+                    await sleep(12 + Math.random() * 22);
+                }
+                cur.remove();
+                linha.innerHTML = linkContato(c);
+            }
+        }
+
+        /* ---------- boot: a shell reversa chega (só na primeira visita da sessão) ---------- */
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        let rapido = matchMedia("(prefers-reduced-motion:reduce)").matches;
+        ["keydown", "pointerdown"].forEach(t => addEventListener(t, () => { rapido = true; }, { once: true }));
+        if ("IntersectionObserver" in window) {
+            const io = new IntersectionObserver(es => {
+                if (!es.some(e => e.isIntersecting)) return;
+                io.disconnect(); digitarContato();
+            }, { threshold: .35 });
+            io.observe($("contato"));
+        } else setTimeout(digitarContato, 0);
+        const box = ls => {
+            const w = Math.max(...ls.map(l => l.length)) + 4, b = "═".repeat(w - 2);
+            return "╔" + b + "╗\n" + ls.map(l => "║ " + l.padEnd(w - 4) + " ║").join("\n") + "\n╚" + b + "╝";
+        };
+
+        async function boot() {
+            document.title = "Writeups de " + EU.nome;
+            try { if (sessionStorage.getItem("boot")) rapido = true; sessionStorage.setItem("boot", "1"); } catch (e) { }
+            const h = hashPath(); if (dirOk(h)) cwd = h;
+            const L = $("bl"), R = $("br");
+            const kali = `<span class="kb">┌──(${esc(EU.nome)}㉿kali)-[</span><span class="p">~</span><span class="kb">]</span>\n<span class="kb">└─</span>$ `;
+            const digitar = async (B, prefixo, cmd) => {
+                const d = out(prefixo, "", B), t = document.createTextNode(""), c = document.createElement("span");
+                c.className = "tcur"; d.appendChild(t); d.appendChild(c);
+                for (const ch of cmd) {
+                    if (rapido) { t.data = cmd; break; }
+                    t.data += ch; await sleep(12 + Math.random() * 22);
+                }
+                c.remove();
+            };
+            const limpar = async B => {
+                if (!rapido) { B.classList.add("clr"); await sleep(220); }
+                B.innerHTML = ""; B.classList.remove("clr");
+                if (!rapido) await sleep(150);
+            };
+            const executar = async B => {
+                const l = out(`<span class="dim">[*] executando payload</span>`, "", B), sp = l.firstChild;
+                for (let i = 0; i < 3 && !rapido; i++) { await sleep(180); sp.textContent += "."; }
+                out(`<span class="dim">[+] shell estabilizada</span>`, "", B);
+            };
+            /* [painel, html, pausa, comando digitado, ação depois] */
+            const passos = [
+                [L, kali, 150, "nc -lvnp 4444"],
+                [L, `<span class="dim">listening on [any] 4444 ...</span>`, 180],
+                [L, `<span class="dim">connect to [10.10.14.7] from (UNKNOWN) [10.10.11.23] 51234</span>`, 100],
+                [R, `$ `, 150, `python3 -c 'import pty;pty.spawn("/bin/bash")'`, executar],
+                [R, `uid=33(www-data) gid=33(www-data) groups=33(www-data)`, 700],
+                [R, null, 0, null, limpar],
+                [R, `$ `, 100, "whoami"],
+                [R, `www-data`, 600],
+                [R, null, 0, null, limpar],
+                [R, `$ `, 100, "cat sobre.txt"],
+                [R, `Olá! Eu sou o ${esc(EU.nome)}.\nEstudo segurança da informação e anoto aqui o caminho de cada desafio que resolvo.\nSe achar algum erro, me avise.`, 200],
+            ];
+            for (const [B, t, d, cmd, acao] of passos) {
+                if (t !== null) { if (cmd) await digitar(B, t, cmd); else out(t, "", B); }
+                if (acao) await acao(B);
+                follow(); if (!rapido) await sleep(d);
+            }
+            if (cwd) out(`${pr("/var/www/writeups")} cd ${esc(cwd)}`, "", R);
+            $("panel").hidden = false; painel();
+            alvo = true; follow();
+        }
+        boot();
+    </script>
+</body>
+
+</html>
