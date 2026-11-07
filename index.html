@@ -71,9 +71,12 @@
         }
 
         .term {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
             max-width: 820px;
             margin: 0 auto;
-            padding: 48px 20px 100px
+            padding: 48px 20px 64px
         }
 
         .o {
@@ -505,7 +508,7 @@
         }
 
         .contato {
-            margin: 40px auto 0;
+            margin: auto auto 0;
             text-align: center
         }
 
@@ -638,7 +641,7 @@
             }
 
             .term {
-                padding: 28px 14px 90px
+                padding: 28px 14px 56px
             }
 
             .bn {
@@ -697,7 +700,7 @@
            dif: facil | medio | dificil | insano
            data: AAAA-MM-DD    link: caminho do writeup (.html, .md, .pdf) ou URL    */
         const WRITEUPS = [
-            { titulo: "Journey: dropper multi-camadas em 9 linguagens", plataforma: "ctf.pink.bayern", sub: "ctf+pink", url: "https://ctf.pink.bayern/challenges", cat: "ctf's", dif: "insano", data: "2026-11-07", tags: ["reversing", "malware", "aes-gcm", "emojicode", "brainfuck"], link: "writeups/journey-ctf.html" }
+            { titulo: "Journey: dropper multi-camadas em 9 linguagens", plataforma: "ctf.pink.bayern", sub: "PINK+ CTF 2026", url: "https://ctftime.org/event/3331", cat: "ctf's", dif: "insano", data: "2026-11-07", tags: ["reversing", "malware", "aes-gcm", "emojicode", "brainfuck"], link: "writeups/journey-ctf.html" }
         ];
 
         /* ---------- núcleo ---------- */
