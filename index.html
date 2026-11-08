@@ -880,7 +880,7 @@
                 [R, `www-data`, 600],
                 [R, null, 0, null, limpar],
                 [R, `$ `, 100, "cat sobre.txt"],
-                [R, `Olá! Eu sou o ${esc(EU.nome)}.\nEstudo segurança da informação e anoto aqui o caminho de cada desafio que resolvo.\nSe achar algum erro, me avise.`, 200],
+                [R, `Olá, meu nome é Maike. Sou graduando em Sistemas de Informação na UFLA e um aventureiro em segurança ofensiva e bug bounty. Aqui eu anoto meus relatórios. Aproveite! xD`, 200],
             ];
             for (const [B, t, d, cmd, acao] of passos) {
                 if (t !== null) { if (cmd) await digitar(B, t, cmd); else out(t, "", B); }
